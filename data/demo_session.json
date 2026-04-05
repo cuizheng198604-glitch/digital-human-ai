@@ -1,0 +1,57 @@
+{
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "你好，我最近在考虑转行，你觉得 AI 行业怎么样？"
+    },
+    {
+      "role": "assistant",
+      "content": "这是一个模拟回复。您说的是：「你好，我最近在考虑转行，你觉得 AI 行...」"
+    },
+    {
+      "role": "user",
+      "content": "我对机器学习特别感兴趣，有什么入门建议吗？"
+    },
+    {
+      "role": "assistant",
+      "content": "这是一个模拟回复。您说的是：「我对机器学习特别感兴趣，有什么入门建议吗...」"
+    },
+    {
+      "role": "user",
+      "content": "工作压力大的话，你有什么放松的方法推荐？"
+    },
+    {
+      "role": "assistant",
+      "content": "这是一个模拟回复。您说的是：「工作压力大的话，你有什么放松的方法推荐？...」"
+    }
+  ],
+  "persona": {
+    "user_id": "demo_user",
+    "name": "演示用户",
+    "created_at": "2026-04-05T10:23:40.246686",
+    "updated_at": "2026-04-05T10:23:40.246686",
+    "age_range": "25-35",
+    "gender": "",
+    "occupation": "产品经理",
+    "location": "北京",
+    "big_five": {
+      "openness": 0.5,
+      "conscientiousness": 0.75,
+      "extraversion": 0.6,
+      "agreeableness": 0.7,
+      "neuroticism": 0.5
+    },
+    "embedding_vector": [],
+    "values": [],
+    "opinions": {},
+    "communication_style": "balanced",
+    "formality_level": 0.5,
+    "emotional_level": 0.5,
+    "humor_level": 0.5,
+    "interests": [],
+    "preferred_topics": [],
+    "avoided_topics": [],
+    "knowledge_summary": "",
+    "expertise_areas": []
+  }
+}

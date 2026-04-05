@@ -1,0 +1,280 @@
+{
+  "sessions": {
+    "JkKAR5YzK9s_U8ZpNBUNTzQdHDM-NRMVcT-PMdpwXzw": {
+      "user_id": "cfc84804",
+      "created_at": "2026-04-05T17:45:02.853980",
+      "expires_at": "2026-05-05T17:45:02.853980"
+    }
+  },
+  "answers": {
+    "cfc84804": {
+      "big_five": [
+        {
+          "question_id": "bf_1",
+          "answer": 5,
+          "timestamp": "2026-04-05T17:45:22.603162"
+        },
+        {
+          "question_id": "bf_2",
+          "answer": 5,
+          "timestamp": "2026-04-05T17:45:28.980586"
+        },
+        {
+          "question_id": "bf_3",
+          "answer": 2,
+          "timestamp": "2026-04-05T17:45:33.646553"
+        },
+        {
+          "question_id": "bf_4",
+          "answer": 2,
+          "timestamp": "2026-04-05T17:45:35.854990"
+        },
+        {
+          "question_id": "bf_5",
+          "answer": 5,
+          "timestamp": "2026-04-05T17:45:38.078769"
+        },
+        {
+          "question_id": "bf_6",
+          "answer": 3,
+          "timestamp": "2026-04-05T17:45:45.485693"
+        },
+        {
+          "question_id": "bf_7",
+          "answer": 4,
+          "timestamp": "2026-04-05T17:45:48.506558"
+        },
+        {
+          "question_id": "bf_8",
+          "answer": 5,
+          "timestamp": "2026-04-05T17:45:51.322106"
+        },
+        {
+          "question_id": "bf_9",
+          "answer": 2,
+          "timestamp": "2026-04-05T17:45:53.934791"
+        },
+        {
+          "question_id": "bf_10",
+          "answer": 4,
+          "timestamp": "2026-04-05T17:45:58.136815"
+        }
+      ],
+      "social": [
+        {
+          "question_id": "social_1",
+          "answer": 3,
+          "timestamp": "2026-04-05T17:46:07.689123"
+        },
+        {
+          "question_id": "social_2",
+          "answer": 2,
+          "timestamp": "2026-04-05T17:46:10.327053"
+        },
+        {
+          "question_id": "social_3",
+          "answer": 2,
+          "timestamp": "2026-04-05T17:46:12.303476"
+        },
+        {
+          "question_id": "social_4",
+          "answer": [
+            0
+          ],
+          "timestamp": "2026-04-05T17:46:21.767511"
+        },
+        {
+          "question_id": "social_5",
+          "answer": "无",
+          "timestamp": "2026-04-05T17:46:31.150266"
+        }
+      ],
+      "values": [
+        {
+          "question_id": "value_1",
+          "answer": 4,
+          "timestamp": "2026-04-05T17:47:04.508060"
+        },
+        {
+          "question_id": "value_2",
+          "answer": 5,
+          "timestamp": "2026-04-05T17:47:08.639713"
+        },
+        {
+          "question_id": "value_3",
+          "answer": 2,
+          "timestamp": "2026-04-05T17:47:12.662981"
+        },
+        {
+          "question_id": "value_4",
+          "answer": [
+            2,
+            3,
+            4
+          ],
+          "timestamp": "2026-04-05T17:47:25.515650"
+        },
+        {
+          "question_id": "value_5",
+          "answer": "没有",
+          "timestamp": "2026-04-05T17:47:30.307723"
+        }
+      ],
+      "interests": [
+        {
+          "question_id": "interest_1",
+          "answer": [
+            0,
+            1,
+            3,
+            4
+          ],
+          "timestamp": "2026-04-05T17:47:40.543551"
+        },
+        {
+          "question_id": "interest_2",
+          "answer": 4,
+          "timestamp": "2026-04-05T17:47:43.645108"
+        },
+        {
+          "question_id": "interest_3",
+          "answer": 2,
+          "timestamp": "2026-04-05T17:47:49.498651"
+        },
+        {
+          "question_id": "interest_4",
+          "answer": "无",
+          "timestamp": "2026-04-05T17:47:52.743856"
+        }
+      ]
+    }
+  },
+  "progress": {},
+  "results": {
+    "cfc84804": {
+      "persona": {
+        "user_id": "cfc84804",
+        "name": "",
+        "created_at": "2026-04-05T17:47:55.287747",
+        "updated_at": "2026-04-05T17:47:55.287747",
+        "age_range": "",
+        "gender": "",
+        "occupation": "",
+        "location": "",
+        "big_five": {
+          "openness": 0.5,
+          "conscientiousness": 0.5,
+          "extraversion": 0.5,
+          "agreeableness": 0.5,
+          "neuroticism": 0.5
+        },
+        "embedding_vector": [],
+        "values": [],
+        "opinions": {},
+        "communication_style": "balanced",
+        "formality_level": 0.5,
+        "emotional_level": 0.5,
+        "humor_level": 0.5,
+        "interests": [],
+        "preferred_topics": [],
+        "avoided_topics": [],
+        "knowledge_summary": "",
+        "expertise_areas": []
+      },
+      "built_at": "2026-04-05T17:47:55.287747"
+    }
+  },
+  "analysis": {
+    "cfc84804": {
+      "big_five": {
+        "dimension_scores": {
+          "openness": [
+            1.0,
+            0.6
+          ],
+          "conscientiousness": [
+            1.0,
+            0.8
+          ],
+          "extraversion": [
+            0.4,
+            0.0
+          ],
+          "agreeableness": [
+            0.4,
+            0.4
+          ],
+          "neuroticism": [
+            0.0,
+            0.19999999999999996
+          ]
+        },
+        "dimension_avg": {
+          "openness": 0.8,
+          "conscientiousness": 0.9,
+          "extraversion": 0.2,
+          "agreeableness": 0.4,
+          "neuroticism": 0.09999999999999998
+        },
+        "submitted_at": "2026-04-05T17:45:58.141450"
+      },
+      "social": {
+        "dimension_scores": {
+          "communication_preference": [
+            0.0
+          ],
+          "social_battery": [
+            0.4
+          ],
+          "proactivity": [
+            0.4
+          ],
+          "ideal_relationship": [
+            0.0
+          ]
+        },
+        "dimension_avg": {
+          "communication_preference": 0.0,
+          "social_battery": 0.4,
+          "proactivity": 0.4,
+          "ideal_relationship": 0.0
+        },
+        "submitted_at": "2026-04-05T17:46:31.156251"
+      },
+      "values": {
+        "dimension_scores": {
+          "risk_tolerance": [
+            1.0
+          ],
+          "delayed_gratification": [
+            0.4
+          ],
+          "core_belief": [
+            0.0
+          ]
+        },
+        "dimension_avg": {
+          "risk_tolerance": 1.0,
+          "delayed_gratification": 0.4,
+          "core_belief": 0.0
+        },
+        "submitted_at": "2026-04-05T17:47:30.312746"
+      },
+      "interests": {
+        "dimension_scores": {
+          "reading_habit": [
+            0.8
+          ],
+          "untried_interests": [
+            0.0
+          ]
+        },
+        "dimension_avg": {
+          "reading_habit": 0.8,
+          "untried_interests": 0.0
+        },
+        "submitted_at": "2026-04-05T17:47:52.748877"
+      }
+    }
+  }
+}

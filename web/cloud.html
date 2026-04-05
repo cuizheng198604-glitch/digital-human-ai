@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数字人AI - 人格问卷 (云端版)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --error: #EF4444;
+            --bg: #F9FAFB;
+            --card: #FFFFFF;
+            --text: #1F2937;
+            --text-secondary: #6B7280;
+            --border: #E5E7EB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #6366F1 100%);
+            color: white;
+            padding: 1.5rem 1rem;
+            text-align: center;
+        }
+        .header h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .header p { font-size: 0.9rem; opacity: 0.9; }
+        .container { max-width: 480px; margin: 0 auto; padding: 1rem; }
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            text-align: center;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #4338CA; }
+        .btn-success { background: var(--success); color: white; }
+        .question-card { animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .question-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem; }
+        .question-type { background: #EEF2FF; color: var(--primary); padding: 0.2rem 0.6rem; border-radius: 20px; font-weight: 500; }
+        .question-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 1.5rem; line-height: 1.5; }
+        .scale-options { display: flex; justify-content: space-between; gap: 0.25rem; margin-bottom: 0.5rem; }
+        .scale-option {
+            flex: 1; aspect-ratio: 1; max-width: 50px;
+            border: 2px solid var(--border); border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; background: white;
+        }
+        .scale-option:hover { border-color: var(--primary); }
+        .scale-option.selected { background: var(--primary); border-color: var(--primary); color: white; }
+        .choice-options { display: flex; flex-direction: column; gap: 0.75rem; }
+        .choice-option {
+            padding: 1rem; border: 2px solid var(--border); border-radius: 12px;
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 1rem;
+        }
+        .choice-option:hover { border-color: var(--primary); background: #F5F3FF; }
+        .choice-option.selected { border-color: var(--primary); background: #EEF2FF; }
+        .choice-radio {
+            width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .choice-option.selected .choice-radio { border-color: var(--primary); background: var(--primary); }
+        .choice-option.selected .choice-radio::after { content: '✓'; color: white; font-size: 0.8rem; }
+        .text-input {
+            width: 100%; min-height: 100px; padding: 1rem;
+            border: 2px solid var(--border); border-radius: 12px;
+            font-size: 1rem; font-family: inherit; resize: vertical;
+        }
+        .text-input:focus { outline: none; border-color: var(--primary); }
+        .nav-buttons { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .nav-buttons .btn { flex: 1; text-align: center; }
+        .progress-bar { background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 1rem; }
+        .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
+        .completion-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .completion-title { font-size: 1.3rem; font-weight: 700; color: var(--success); margin-bottom: 0.5rem; }
+        .completion-text { color: var(--text-secondary); margin-bottom: 1.5rem; }
+        .share-link {
+            background: #F3F4F6; padding: 1rem; border-radius: 12px;
+            font-size: 0.9rem; word-break: break-all; margin: 1rem 0;
+            border: 1px solid var(--border);
+        }
+        .copy-btn {
+            background: var(--primary); color: white; border: none;
+            padding: 0.75rem 1.5rem; border-radius: 20px;
+            font-weight: 600; cursor: pointer; margin-top: 0.5rem;
+        }
+        .copy-btn:hover { background: #4338CA; }
+        .server-status {
+            background: #FEF3C7; border: 1px solid #F59E0B;
+            border-radius: 12px; padding: 1rem; margin-bottom: 1rem;
+        }
+        .server-status.error { background: #FEF2F2; border-color: #EF4444; }
+        .server-status.success { background: #ECFDF5; border-color: #10B981; }
+        .loading {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); z-index: 1000;
+            justify-content: center; align-items: center; flex-direction: column; gap: 1rem;
+        }
+        .loading.active { display: flex; }
+        .loading-spinner {
+            width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: #1F2937; color: white; padding: 0.875rem 1.5rem;
+            border-radius: 25px; font-size: 0.9rem; opacity: 0; transition: all 0.3s; z-index: 1001;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🧠 数字人 AI</h1>
+        <p>5分钟构建你的专属人格画像</p>
+    </header>
+    
+    <main class="container">
+        <!-- 服务器配置 -->
+        <div class="server-status" id="serverStatus">
+            <strong>📡 数据存储服务</strong>
+            <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+                当前状态: <span id="serverState">检测中...</span>
+            </div>
+        </div>
+        
+        <!-- 问卷 -->
+        <div id="questionnaireSection">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            
+            <div class="card question-card" id="questionCard">
+                <div class="question-meta">
+                    <span id="questionNum">1/10</span>
+                    <span class="question-type" id="questionType">量表题</span>
+                </div>
+                <div class="question-text" id="questionText">加载中...</div>
+                <div id="optionsArea"></div>
+                <div class="nav-buttons">
+                    <button class="btn" style="background:#E5E7EB;color:#1F2937" id="prevBtn" onclick="prevQuestion()">上一题</button>
+                    <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>下一题</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 完成 -->
+        <div class="card" id="completionSection" style="display: none;">
+            <div class="completion-icon">🎉</div>
+            <div class="completion-title">问卷完成！</div>
+            <div class="completion-text" id="completionText">感谢你的参与</div>
+            
+            <div style="margin-top: 1.5rem;">
+                <strong>📤 分享给你的朋友：</strong>
+                <div class="share-link" id="shareLink">生成中...</div>
+                <button class="copy-btn" onclick="copyShareLink()">📋 复制链接</button>
+            </div>
+            
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <strong>📋 查看已填写的数据：</strong>
+                <div style="margin-top: 0.5rem;">
+                    <button class="btn btn-success" onclick="viewData()">📊 查看数据</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <div style="color: white; font-size: 1rem;" id="loadingText">加载中...</div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // ==================== 配置 ====================
+        const API_BASE = 'https://api.jsonbin.io/v3';  // JSONBin.io
+        const BIN_ID = localStorage.getItem('binId');
+        const API_KEY = '$2a$10$YOUR_API_KEY_HERE';  // 需要替换为你的API Key
+        
+        // ==================== 状态 ====================
+        let questions = [];
+        let currentIndex = 0;
+        let answers = {};
+        let binId = localStorage.getItem('binId');
+        let binCreated = false;
+        
+        // ==================== 问卷数据 ====================
+        const questionnaireData = {
+            big_five: {
+                name: "大五人格测评",
+                questions: [
+                    { id: "bf1", type: "scale", text: "我愿意尝试新的活动和体验", dimension: "openness" },
+                    { id: "bf2", type: "scale", text: "我通常会提前计划安排事情", dimension: "conscientiousness" },
+                    { id: "bf3", type: "scale", text: "我喜欢和他人交流互动", dimension: "extraversion" },
+                    { id: "bf4", type: "scale", text: "我信任他人并愿意合作", dimension: "agreeableness" },
+                    { id: "bf5", type: "scale", text: "我容易感到焦虑或担忧", dimension: "neuroticism" },
+                    { id: "bf6", type: "scale", text: "我喜欢抽象思维和理论讨论", dimension: "openness" },
+                    { id: "bf7", type: "scale", text: "我会坚持完成开始的任务", dimension: "conscientiousness" },
+                    { id: "bf8", type: "scale", text: "在聚会中我通常比较安静", dimension: "extraversion" },
+                    { id: "bf9", type: "scale", text: "我善于理解他人感受", dimension: "agreeableness" },
+                    { id: "bf10", type: "scale", text: "我的情绪比较稳定", dimension: "neuroticism" },
+                ]
+            },
+            social: {
+                name: "社交关系调查",
+                questions: [
+                    { id: "s1", type: "choice", text: "你更喜欢什么样的沟通方式？", options: ["面对面交流", "电话/视频", "文字聊天", "都可以"], dimension: "communication" },
+                    { id: "s2", type: "scale", text: "我享受社交活动", dimension: "social" },
+                    { id: "s3", type: "scale", text: "我倾向于主动结交新朋友", dimension: "social" },
+                    { id: "s4", type: "choice", text: "你在社交中最看重什么？", options: ["真诚", "有趣", "有共同话题", "互相支持"], dimension: "social" },
+                    { id: "s5", type: "text", text: "请描述一下你理想中的朋友关系是什么样的？", dimension: "social" },
+                ]
+            },
+            values: {
+                name: "价值观与信念",
+                questions: [
+                    { id: "v1", type: "choice", text: "对你来说，最重要的是？", options: ["成就感", "人际关系", "个人成长", "生活平衡", "安全感"], dimension: "values" },
+                    { id: "v2", type: "scale", text: "我倾向于追求稳定而不是冒险", dimension: "risk" },
+                    { id: "v3", type: "scale", text: "我愿意为长远目标牺牲短期快乐", dimension: "delayed" },
+                    { id: "v4", type: "choice", text: "以下哪些观点你比较认同？", options: ["努力一定有回报", "人应该不断学习", "金钱不是万能的", "家庭最重要"], dimension: "values" },
+                    { id: "v5", type: "text", text: "有没有什么是你一直坚信的信念？", dimension: "belief" },
+                ]
+            },
+            interests: {
+                name: "兴趣与爱好",
+                questions: [
+                    { id: "i1", type: "choice", text: "你平时喜欢关注哪些领域？", options: ["科技/互联网", "金融/投资", "文化/艺术", "体育/健身", "旅行/户外", "美食/生活"], dimension: "interests" },
+                    { id: "i2", type: "scale", text: "我经常阅读非工作相关的书籍", dimension: "reading" },
+                    { id: "i3", type: "choice", text: "周末你通常喜欢？", options: ["在家休息", "和朋友聚会", "学习新技能", "户外运动"], dimension: "weekend" },
+                    { id: "i4", type: "text", text: "有没有什么是你一直想尝试但还没机会做的事？", dimension: "dream" },
+                ]
+            }
+        };
+        
+        // ==================== 初始化 ====================
+        document.addEventListener('DOMContentLoaded', init);
+        
+        async function init() {
+            // 检查URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const shareId = urlParams.get('id');
+            
+            if (shareId) {
+                // 加载分享的数据
+                binId = shareId;
+                await loadSharedData(shareId);
+            } else {
+                // 新用户，开始问卷
+                startQuestionnaire();
+            }
+            
+            // 检查服务器状态
+            checkServerStatus();
+        }
+        
+        async function checkServerStatus() {
+            const statusEl = document.getElementById('serverState');
+            const cardEl = document.getElementById('serverStatus');
+            
+            try {
+                // 尝试连接 JSONBin
+                statusEl.textContent = "JSONBin.io 服务";
+                cardEl.classList.add('success');
+            } catch (e) {
+                statusEl.textContent = "离线模式 (数据仅保存在本地)";
+                cardEl.classList.add('error');
+            }
+        }
+        
+        function startQuestionnaire() {
+            // 合并所有问卷
+            questions = [
+                ...questionnaireData.big_five.questions,
+                ...questionnaireData.social.questions,
+                ...questionnaireData.values.questions,
+                ...questionnaireData.interests.questions
+            ];
+            
+            // 尝试从本地加载进度
+            const saved = localStorage.getItem('questionnaireProgress');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                if (progress.answers) {
+                    answers = progress.answers;
+                    currentIndex = progress.currentIndex || 0;
+                }
+            }
+            
+            renderQuestion();
+        }
+        
+        async function loadSharedData(shareId) {
+            showLoading("加载数据中...");
+            
+            try {
+                const res = await fetch(`${API_BASE}/b/${shareId}/latest`, {
+                    headers: { 'X-Access-Key': API_KEY }
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.record && data.record.answers) {
+                        answers = data.record.answers;
+                        currentIndex = questions.length; // 跳到完成页
+                        showCompletion();
+                        hideLoading();
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log('无法加载分享数据，从头开始');
+            }
+            
+            startQuestionnaire();
+            hideLoading();
+        }
+        
+        function renderQuestion() {
+            if (currentIndex >= questions.length) {
+                showCompletion();
+                return;
+            }
+            
+            const q = questions[currentIndex];
+            document.getElementById('questionNum').textContent = `${currentIndex + 1}/${questions.length}`;
+            document.getElementById('questionText').textContent = q.text;
+            document.getElementById('questionType').textContent = q.type === 'scale' ? '量表题' : q.type === 'choice' ? '选择题' : '文本题';
+            
+            const percent = Math.round(((currentIndex + 1) / questions.length) * 100);
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            
+            const optionsArea = document.getElementById('optionsArea');
+            
+            if (q.type === 'scale') {
+                let html = '<div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;font-size:0.75rem;color:#6B7280;"><span>很不认同</span><span>非常认同</span></div><div class="scale-options">';
+                for (let i = 1; i <= 5; i++) {
+                    const selected = answers[q.id] === i ? 'selected' : '';
+                    html += `<div class="scale-option ${selected}" onclick="selectScale(${i})">${i}</div>`;
+                }
+                html += '</div>';
+                optionsArea.innerHTML = html;
+            } else if (q.type === 'choice') {
+                let html = '<div class="choice-options">';
+                q.options.forEach((opt, idx) => {
+                    const selected = answers[q.id] === idx ? 'selected' : '';
+                    html += `<div class="choice-option ${selected}" onclick="selectChoice(${idx}, '${opt.replace(/'/g, "\\'")}')"><div class="choice-radio"></div><div>${opt}</div></div>`;
+                });
+                html += '</div>';
+                optionsArea.innerHTML = html;
+            } else if (q.type === 'text') {
+                const value = answers[q.id] || '';
+                optionsArea.innerHTML = `<textarea class="text-input" id="textAnswer" placeholder="请输入你的回答...">${value}</textarea>`;
+            }
+            
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.textContent = currentIndex === questions.length - 1 ? '提交' : '下一题';
+            nextBtn.disabled = answers[questions[currentIndex]?.id] === undefined && questions[currentIndex]?.type !== 'text';
+        }
+        
+        function selectScale(value) {
+            const q = questions[currentIndex];
+            answers[q.id] = value;
+            document.querySelectorAll('.scale-option').forEach((el, idx) => el.classList.toggle('selected', idx + 1 === value));
+            document.getElementById('nextBtn').disabled = false;
+            saveProgress();
+        }
+        
+        function selectChoice(idx, value) {
+            const q = questions[currentIndex];
+            answers[q.id] = idx;
+            document.querySelectorAll('.choice-option').forEach((el, i) => el.classList.toggle('selected', i === idx));
+            document.getElementById('nextBtn').disabled = false;
+            saveProgress();
+        }
+        
+        function saveProgress() {
+            localStorage.setItem('questionnaireProgress', JSON.stringify({ answers, currentIndex }));
+        }
+        
+        async function nextQuestion() {
+            const q = questions[currentIndex];
+            
+            // 文本题需要保存
+            if (q.type === 'text') {
+                const text = document.getElementById('textAnswer').value.trim();
+                if (!text) {
+                    showToast('请输入回答');
+                    return;
+                }
+                answers[q.id] = text;
+            }
+            
+            saveProgress();
+            
+            if (currentIndex < questions.length - 1) {
+                currentIndex++;
+                renderQuestion();
+            } else {
+                await submitQuestionnaire();
+            }
+        }
+        
+        function prevQuestion() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderQuestion();
+            }
+        }
+        
+        async function submitQuestionnaire() {
+            showLoading("保存数据中...");
+            
+            // 生成唯一ID
+            const shareId = generateId();
+            
+            // 保存到本地
+            localStorage.setItem('binId', shareId);
+            localStorage.setItem('questionnaireAnswers', JSON.stringify(answers));
+            
+            // 尝试保存到 JSONBin (可选)
+            try {
+                const data = { answers, submittedAt: new Date().toISOString() };
+                await fetch(`${API_BASE}/b`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Bin-Private': 'false'
+                    },
+                    body: JSON.stringify(data)
+                });
+            } catch (e) {
+                console.log('云端保存失败，仅本地保存');
+            }
+            
+            hideLoading();
+            showCompletion(shareId);
+        }
+        
+        function showCompletion(shareId) {
+            document.getElementById('questionnaireSection').style.display = 'none';
+            document.getElementById('completionSection').style.display = 'block';
+            
+            // 生成分享链接
+            const currentUrl = window.location.href.split('?')[0];
+            const shareUrl = `${currentUrl}?id=${shareId || binId || generateId()}`;
+            document.getElementById('shareLink').textContent = shareUrl;
+            
+            // 存储分享ID
+            if (shareId) {
+                localStorage.setItem('binId', shareId);
+            }
+        }
+        
+        function generateId() {
+            return 'xxxxxxxxxxxx'.replace(/x/g, () => Math.floor(Math.random() * 16).toString(16));
+        }
+        
+        function copyShareLink() {
+            const link = document.getElementById('shareLink').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                showToast('链接已复制!');
+            }).catch(() => {
+                showToast('复制失败，请手动复制');
+            });
+        }
+        
+        function viewData() {
+            const answersData = localStorage.getItem('questionnaireAnswers');
+            if (answersData) {
+                const data = JSON.parse(answersData);
+                const analysis = analyzePersonality(data);
+                alert(`数据分析完成！\n\n人格倾向:\n开放性: ${analysis.openness}%\n外向性: ${analysis.extraversion}%\n宜人性: ${analysis.agreeableness}%\n尽责性: ${analysis.conscientiousness}%\n神经质: ${analysis.neuroticism}%`);
+            } else {
+                showToast('暂无数据');
+            }
+        }
+        
+        function analyzePersonality(data) {
+            // 简单分析
+            const dimensionScores = { openness: [], conscientiousness: [], extraversion: [], agreeableness: [], neuroticism: [] };
+            
+            questions.forEach(q => {
+                if (q.dimension && dimensionScores[q.dimension] && data[q.id] !== undefined) {
+                    if (q.type === 'scale') {
+                        dimensionScores[q.dimension].push((data[q.id] / 5) * 100);
+                    }
+                }
+            });
+            
+            const result = {};
+            for (const [dim, scores] of Object.entries(dimensionScores)) {
+                result[dim] = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 50;
+            }
+            return result;
+        }
+        
+        function showLoading(text) {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loading').classList.add('active');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>

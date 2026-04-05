@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数字人AI - 人格问卷</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #4F46E5; --success: #10B981; --error: #EF4444;
+            --bg: #F9FAFB; --card: #FFFFFF; --text: #1F2937; --text-secondary: #6B7280; --border: #E5E7EB;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #6366F1 100%); color: white; padding: 1.5rem 1rem; text-align: center; }
+        .header h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .container { max-width: 480px; margin: 0 auto; padding: 1rem; }
+        .card { background: var(--card); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .btn { display: inline-block; padding: 1rem 2rem; border-radius: 25px; font-weight: 600; font-size: 1rem; cursor: pointer; border: none; text-decoration: none; text-align: center; }
+        .btn-primary { background: var(--primary); color: white; }
+        .question-card { animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .question-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem; }
+        .question-type { background: #EEF2FF; color: var(--primary); padding: 0.2rem 0.6rem; border-radius: 20px; font-weight: 500; }
+        .question-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 1.5rem; line-height: 1.5; }
+        .scale-options { display: flex; justify-content: space-between; gap: 0.25rem; margin-bottom: 0.5rem; }
+        .scale-option { flex: 1; aspect-ratio: 1; max-width: 50px; border: 2px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: white; }
+        .scale-option:hover { border-color: var(--primary); }
+        .scale-option.selected { background: var(--primary); border-color: var(--primary); color: white; }
+        .choice-options { display: flex; flex-direction: column; gap: 0.75rem; }
+        .choice-option { padding: 1rem; border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 1rem; }
+        .choice-option:hover { border-color: var(--primary); background: #F5F3FF; }
+        .choice-option.selected { border-color: var(--primary); background: #EEF2FF; }
+        .choice-radio { width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .choice-option.selected .choice-radio { border-color: var(--primary); background: var(--primary); }
+        .choice-option.selected .choice-radio::after { content: '✓'; color: white; font-size: 0.8rem; }
+        .text-input { width: 100%; min-height: 100px; padding: 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 1rem; font-family: inherit; resize: vertical; }
+        .text-input:focus { outline: none; border-color: var(--primary); }
+        .nav-buttons { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .nav-buttons .btn { flex: 1; text-align: center; }
+        .progress-bar { background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 1rem; }
+        .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
+        .completion-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .completion-title { font-size: 1.3rem; font-weight: 700; color: var(--success); margin-bottom: 0.5rem; }
+        .completion-text { color: var(--text-secondary); margin-bottom: 1rem; }
+        .result-card { background: var(--card); border-radius: 16px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .result-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .result-bar { margin-bottom: 1rem; }
+        .result-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.25rem; }
+        .result-fill { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .result-fill-inner { height: 100%; background: linear-gradient(90deg, var(--primary), #818CF8); border-radius: 4px; }
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: #1F2937; color: white; padding: 0.875rem 1.5rem; border-radius: 25px; font-size: 0.9rem; opacity: 0; transition: all 0.3s; z-index: 1001; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🧠 数字人 AI</h1>
+    </header>
+    
+    <main class="container">
+        <div id="questionnaireSection">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+            <div class="card question-card" id="questionCard">
+                <div class="question-meta">
+                    <span id="questionNum">1/10</span>
+                    <span class="question-type" id="questionType">量表题</span>
+                </div>
+                <div class="question-text" id="questionText">加载中...</div>
+                <div id="optionsArea"></div>
+                <div class="nav-buttons">
+                    <button class="btn" style="background:#E5E7EB;color:#1F2937" id="prevBtn" onclick="prevQuestion()">上一题</button>
+                    <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>下一题</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="completionSection" style="display:none;">
+            <div class="card" style="text-align:center;">
+                <div class="completion-icon">🎉</div>
+                <div class="completion-title">问卷完成！</div>
+                <div class="completion-text">感谢你的参与，以下是你的初步人格分析</div>
+            </div>
+            <div class="result-card" id="resultCard"></div>
+            <div class="card" style="text-align:center;">
+                <p style="color:var(--text-secondary);margin-bottom:1rem;">完整人格画像需要更详细的问卷和数据采集</p>
+                <button class="btn btn-primary" onclick="restart()">重新测试</button>
+            </div>
+        </div>
+    </main>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        const questions = [
+            { id: 'q1', type: 'scale', text: '我愿意尝试新的活动和体验', dimension: 'openness' },
+            { id: 'q2', type: 'scale', text: '我通常会提前计划安排事情', dimension: 'conscientiousness' },
+            { id: 'q3', type: 'scale', text: '我喜欢和他人交流互动', dimension: 'extraversion' },
+            { id: 'q4', type: 'scale', text: '我信任他人并愿意合作', dimension: 'agreeableness' },
+            { id: 'q5', type: 'scale', text: '我容易感到焦虑或担忧', dimension: 'neuroticism' },
+            { id: 'q6', type: 'scale', text: '我喜欢抽象思维和理论讨论', dimension: 'openness' },
+            { id: 'q7', type: 'scale', text: '我会坚持完成开始的任务', dimension: 'conscientiousness' },
+            { id: 'q8', type: 'scale', text: '在聚会中我通常比较安静', dimension: 'extraversion' },
+            { id: 'q9', type: 'scale', text: '我善于理解他人感受', dimension: 'agreeableness' },
+            { id: 'q10', type: 'scale', text: '我的情绪比较稳定', dimension: 'neuroticism' },
+            { id: 'q11', type: 'choice', text: '你更喜欢什么样的沟通方式？', options: ['直接坦诚', '委婉含蓄', '看情况'], dimension: 'communication' },
+            { id: 'q12', type: 'choice', text: '面对压力时，你通常会？', options: ['积极应对', '寻求他人帮助', '暂时逃避'], dimension: 'stress' },
+            { id: 'q13', type: 'choice', text: '你更看重什么？', options: ['过程', '结果', '两者兼顾'], dimension: 'process' },
+            { id: 'q14', type: 'scale', text: '我经常思考人生的意义和目的', dimension: 'meaning' },
+            { id: 'q15', type: 'scale', text: '我愿意为理想放弃眼前的舒适', dimension: 'ideal' },
+        ];
+        
+        let currentIndex = 0;
+        let answers = {};
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('digitalHumanAnswers');
+            if (saved) {
+                answers = JSON.parse(saved);
+                currentIndex = Math.min(answers.lastIndex + 1 || 0, questions.length - 1);
+            }
+            renderQuestion();
+        });
+        
+        function renderQuestion() {
+            const q = questions[currentIndex];
+            document.getElementById('questionNum').textContent = `${currentIndex + 1}/${questions.length}`;
+            document.getElementById('questionText').textContent = q.text;
+            document.getElementById('questionType').textContent = q.type === 'scale' ? '量表题' : '选择题';
+            
+            document.getElementById('progressFill').style.width = `${((currentIndex + 1) / questions.length) * 100}%`;
+            
+            const optionsArea = document.getElementById('optionsArea');
+            
+            if (q.type === 'scale') {
+                let html = '<div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;font-size:0.7rem;color:#6B7280;"><span>很不认同</span><span>非常认同</span></div><div class="scale-options">';
+                for (let i = 1; i <= 5; i++) {
+                    const selected = answers[q.id] === i ? 'selected' : '';
+                    html += `<div class="scale-option ${selected}" onclick="selectScale(${i})">${i}</div>`;
+                }
+                html += '</div>';
+                optionsArea.innerHTML = html;
+            } else {
+                let html = '<div class="choice-options">';
+                q.options.forEach((opt, idx) => {
+                    const selected = answers[q.id] === idx ? 'selected' : '';
+                    html += `<div class="choice-option ${selected}" onclick="selectChoice(${idx})"><div class="choice-radio"></div><div>${opt}</div></div>`;
+                });
+                html += '</div>';
+                optionsArea.innerHTML = html;
+            }
+            
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.textContent = currentIndex === questions.length - 1 ? '查看结果' : '下一题';
+            nextBtn.disabled = answers[q.id] === undefined;
+        }
+        
+        function selectScale(value) {
+            const q = questions[currentIndex];
+            answers[q.id] = value;
+            answers.lastIndex = currentIndex;
+            localStorage.setItem('digitalHumanAnswers', JSON.stringify(answers));
+            document.querySelectorAll('.scale-option').forEach((el, idx) => el.classList.toggle('selected', idx + 1 === value));
+            document.getElementById('nextBtn').disabled = false;
+        }
+        
+        function selectChoice(idx) {
+            const q = questions[currentIndex];
+            answers[q.id] = idx;
+            answers.lastIndex = currentIndex;
+            localStorage.setItem('digitalHumanAnswers', JSON.stringify(answers));
+            document.querySelectorAll('.choice-option').forEach((el, i) => el.classList.toggle('selected', i === idx));
+            document.getElementById('nextBtn').disabled = false;
+        }
+        
+        function nextQuestion() {
+            if (currentIndex < questions.length - 1) {
+                currentIndex++;
+                renderQuestion();
+            } else {
+                showResults();
+            }
+        }
+        
+        function prevQuestion() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderQuestion();
+            }
+        }
+        
+        function showResults() {
+            document.getElementById('questionnaireSection').style.display = 'none';
+            document.getElementById('completionSection').style.display = 'block';
+            
+            const scores = { openness: 0, conscientiousness: 0, extraversion: 0, agreeableness: 0, neuroticism: 0 };
+            const counts = { openness: 0, conscientiousness: 0, extraversion: 0, agreeableness: 0, neuroticism: 0 };
+            
+            questions.forEach(q => {
+                if (q.dimension && scores[q.dimension] !== undefined && answers[q.id] !== undefined) {
+                    if (q.type === 'scale') {
+                        scores[q.dimension] += (answers[q.id] / 5) * 100;
+                        counts[q.dimension]++;
+                    } else {
+                        // 选择题给中等偏上分数
+                        scores[q.dimension] += 60 + answers[q.id] * 10;
+                        counts[q.dimension]++;
+                    }
+                }
+            });
+            
+            const labels = {
+                openness: '开放性',
+                conscientiousness: '尽责性',
+                extraversion: '外向性',
+                agreeableness: '宜人性',
+                neuroticism: '神经质'
+            };
+            
+            const descriptions = {
+                openness: '好奇心强，思维开放',
+                conscientiousness: '自律性强，做事有条理',
+                extraversion: '外向开朗，善于社交',
+                agreeableness: '友善合作，易于相处',
+                neuroticism: '情绪稳定，内心平和'
+            };
+            
+            let html = '';
+            for (const [dim, score] of Object.entries(scores)) {
+                const avg = counts[dim] ? Math.round(scores[dim] / counts[dim]) : 50;
+                html += `
+                    <div class="result-bar">
+                        <div class="result-label">
+                            <span>${labels[dim]}</span>
+                            <span style="color:var(--primary);font-weight:600;">${avg}%</span>
+                        </div>
+                        <div class="result-fill"><div class="result-fill-inner" style="width:${avg}%"></div></div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.25rem;">${descriptions[dim]}</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('resultCard').innerHTML = `<div class="result-title">📊 你的大五人格初步分析</div>${html}`;
+        }
+        
+        function restart() {
+            answers = {};
+            currentIndex = 0;
+            localStorage.removeItem('digitalHumanAnswers');
+            document.getElementById('questionnaireSection').style.display = 'block';
+            document.getElementById('completionSection').style.display = 'none';
+            renderQuestion();
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
