@@ -247,7 +247,7 @@ class PersonalityEncoder:
                     if isinstance(answer_value, list):
                         for opt in answer_value:
                             for interest in interest_keywords:
-                                if interest in opt:
+                                if interest in str(opt):
                                     interests.add(interest)
                     elif isinstance(answer_value, str):
                         for interest in interest_keywords:
