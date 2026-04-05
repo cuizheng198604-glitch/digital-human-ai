@@ -476,7 +476,7 @@ def get_persona_description():
     persona = UserPersona.from_dict(persona_data)
     
     encoder = PersonalityEncoder()
-    description = encoder.generate_persona_description(persona)
+    description = encoder.generate_personality_description(persona)
     
     return jsonify({
         "description": description,
