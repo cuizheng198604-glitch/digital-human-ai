@@ -429,12 +429,14 @@ def build_persona():
             for dim, score in dims.items()
         ]
     
+    # 传递原始答案用于提取兴趣和价值观
     persona = encoder.build_persona(
         user_id=g.user_id,
-        questionnaire_results=questionnaire_results
+        questionnaire_results=questionnaire_results,
+        raw_answers=user_answers
     )
     
-    # 保存画像
+    # 保存画像 (完整数据)
     if g.user_id not in db['results']:
         db['results'][g.user_id] = {}
     db['results'][g.user_id] = {
@@ -660,7 +662,8 @@ def admin_recalculate_all():
             try:
                 persona = encoder.build_persona(
                     user_id=uid,
-                    questionnaire_results=questionnaire_results
+                    questionnaire_results=questionnaire_results,
+                    raw_answers=user_answers  # 传递原始答案用于提取兴趣和价值观
                 )
                 
                 db['results'][uid] = {
