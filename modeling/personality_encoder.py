@@ -159,7 +159,6 @@ class PersonalityEncoder:
     
     def _calculate_big_five(self, questionnaire_results: Dict) -> BigFiveTraits:
         """根据问卷结果计算大五人格分数"""
-        # 简化实现: 实际应根据具体问卷题目计分
         scores = {
             "openness": [],
             "conscientiousness": [],
@@ -168,21 +167,28 @@ class PersonalityEncoder:
             "neuroticism": []
         }
         
-        # 问卷类型到大五维度的映射
+        # 问卷类型到大五维度的映射 (使用实际问卷ID)
         questionnaire_dimensions = {
-            "认知测评": "openness",
-            "社交关系": "extraversion",
-            "观点态度": "agreeableness",
-            "性格特质": "conscientiousness",
-            "行为模式": "neuroticism"
+            "big_five": ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"],
+            "social": ["extraversion", "agreeableness"],
+            "values": ["agreeableness", "openness"],
+            "interests": ["openness", "conscientiousness"]
         }
         
-        for q_type, dimension in questionnaire_dimensions.items():
-            if q_type in questionnaire_results:
-                results = questionnaire_results[q_type]
+        for q_id, dimensions in questionnaire_dimensions.items():
+            if q_id in questionnaire_results:
+                results = questionnaire_results[q_id]
                 if results:
-                    avg_score = sum(r.get("score", 0.5) for r in results) / len(results)
-                    scores[dimension].append(avg_score)
+                    # 按维度分组计算
+                    dim_scores = {d: [] for d in dimensions}
+                    for r in results:
+                        dim = r.get("dimension", "")
+                        if dim in dim_scores:
+                            dim_scores[dim].append(r.get("score", 0.5))
+                    
+                    for dim, dim_list in dim_scores.items():
+                        if dim_list:
+                            scores[dim].extend(dim_list)
         
         # 计算平均分
         final_scores = {}
@@ -197,19 +203,27 @@ class PersonalityEncoder:
     def _extract_values(self, questionnaire_results: Dict) -> List[str]:
         """提取核心价值观"""
         values = []
-        if "观点态度" in questionnaire_results:
-            for q in questionnaire_results["观点态度"]:
+        if "values" in questionnaire_results:
+            for q in questionnaire_results["values"]:
                 if q.get("is_value", False):
-                    values.append(q.get("answer", ""))
+                    answer = q.get("answer", "")
+                    if isinstance(answer, list):
+                        values.extend(answer)
+                    elif answer:
+                        values.append(str(answer))
         return values
     
     def _extract_interests(self, questionnaire_results: Dict) -> List[str]:
         """提取兴趣领域"""
         interests = []
-        if "认知测评" in questionnaire_results:
-            for q in questionnaire_results["认知测评"]:
+        if "interests" in questionnaire_results:
+            for q in questionnaire_results["interests"]:
                 if q.get("is_interest", False):
-                    interests.append(q.get("answer", ""))
+                    answer = q.get("answer", "")
+                    if isinstance(answer, list):
+                        interests.extend(answer)
+                    elif answer:
+                        interests.append(str(answer))
         return interests
     
     def _enrich_from_behavior(self, persona: UserPersona, behavioral_data: Dict):

@@ -81,6 +81,7 @@
         <div class="card">
             <div class="card-title">
                 📋 用户答题记录
+                <button class="refresh-btn" onclick="recalculateAll()" style="background:#F59E0B;margin-right:0.5rem;">🔧 重新计算人格</button>
                 <button class="refresh-btn" onclick="loadData()">🔄 刷新</button>
             </div>
             <div id="tableContainer">
@@ -265,6 +266,26 @@
         function logout() {
             localStorage.clear();
             location.reload();
+        }
+        
+        async function recalculateAll() {
+            if (!confirm('确定要重新计算所有用户的人格画像吗？这将修复之前50%的问题。')) return;
+            
+            showToast('正在重新计算...');
+            
+            try {
+                const res = await fetch('/api/admin/recalculate-all', { method: 'POST' });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast(`成功重新计算了 ${data.recalculated} 个用户的人格画像！`);
+                    loadData(); // 刷新列表
+                } else {
+                    showToast('重新计算失败');
+                }
+            } catch (e) {
+                showToast('重新计算失败: ' + e.message);
+            }
         }
         
         function showToast(message) {

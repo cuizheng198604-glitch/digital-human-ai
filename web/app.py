@@ -603,6 +603,83 @@ def admin_all_data():
     
     return jsonify({'users': all_users})
 
+@app.route('/api/admin/recalculate-all', methods=['POST'])
+def admin_recalculate_all():
+    """重新计算所有用户的人格画像（修复50%问题）"""
+    db = get_db()
+    users_db = get_users()
+    
+    encoder = PersonalityEncoder()
+    recalculated = 0
+    errors = []
+    
+    for uid, user in users_db['users'].items():
+        user_answers = db['answers'].get(uid, {})
+        if not user_answers:
+            continue
+        
+        # 构建问卷结果
+        questionnaire_results = {}
+        for qid, answers in user_answers.items():
+            questionnaire = questionnaire_engine.get_questionnaire(qid)
+            if not questionnaire:
+                continue
+            
+            dimension_scores = {}
+            for answer_data in answers:
+                qid_inner = answer_data['question_id']
+                answer = answer_data['answer']
+                
+                question = None
+                for q in questionnaire.questions:
+                    if q.id == qid_inner:
+                        question = q
+                        break
+                
+                if not question or not question.dimension:
+                    continue
+                
+                score = 0.0
+                if question.type == QuestionType.SCALE and isinstance(answer, int):
+                    score = answer / question.scale_range[1]
+                    if question.reverse_score:
+                        score = 1 - score
+                
+                if question.dimension not in dimension_scores:
+                    dimension_scores[question.dimension] = []
+                dimension_scores[question.dimension].append(score)
+            
+            if dimension_scores:
+                questionnaire_results[qid] = [
+                    {"dimension": dim, "score": score}
+                    for dim, scores in dimension_scores.items()
+                    for score in scores
+                ]
+        
+        if questionnaire_results:
+            try:
+                persona = encoder.build_persona(
+                    user_id=uid,
+                    questionnaire_results=questionnaire_results
+                )
+                
+                db['results'][uid] = {
+                    "persona": persona.to_dict(),
+                    "built_at": datetime.now().isoformat()
+                }
+                recalculated += 1
+            except Exception as e:
+                errors.append({"user_id": uid, "error": str(e)})
+    
+    save_db(db)
+    
+    return jsonify({
+        "success": True,
+        "recalculated": recalculated,
+        "total_users": len(users_db['users']),
+        "errors": errors
+    })
+
 # ==================== 启动 ====================
 
 if __name__ == '__main__':
