@@ -574,6 +574,35 @@ def standalone_page():
     """独立问卷页面"""
     return send_from_directory(app.static_folder, 'standalone_questionnaire.html')
 
+@app.route('/admin')
+def admin_page():
+    """管理后台页面"""
+    return send_from_directory(app.static_folder, 'admin.html')
+
+@app.route('/api/admin/all-data')
+def admin_all_data():
+    """获取所有用户数据"""
+    db = get_db()
+    users_db = get_users()
+    
+    all_users = []
+    for uid, user in users_db['users'].items():
+        user_answers = db['answers'].get(uid, {})
+        answer_count = sum(len(answers) for answers in user_answers.values())
+        has_persona = uid in db['results']
+        persona = db['results'].get(uid, {}).get('persona') if has_persona else None
+        
+        all_users.append({
+            'user_id': uid,
+            'username': user.get('username', ''),
+            'created_at': user.get('created_at', ''),
+            'answer_count': answer_count,
+            'has_persona': has_persona,
+            'persona': persona
+        })
+    
+    return jsonify({'users': all_users})
+
 # ==================== 启动 ====================
 
 if __name__ == '__main__':

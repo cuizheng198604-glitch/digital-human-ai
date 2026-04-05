@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字人AI - 管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --error: #EF4444;
+            --warning: #F59E0B;
+            --bg: #F9FAFB;
+            --card: #FFFFFF;
+            --text: #1F2937;
+            --text-secondary: #6B7280;
+            --border: #E5E7EB;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, #6366F1 100%); color: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 1.2rem; }
+        .logout-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--card); padding: 1.5rem; border-radius: 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-num { font-size: 2.5rem; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem; }
+        .card { background: var(--card); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+        .table th { background: var(--bg); font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); }
+        .table tr:hover { background: #F9FAFB; }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+        .badge-success { background: #ECFDF5; color: var(--success); }
+        .badge-warning { background: #FEF3C7; color: var(--warning); }
+        .btn { padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.8rem; }
+        .loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
+        .empty { text-align: center; padding: 3rem; color: var(--text-secondary); }
+        .refresh-btn { float: right; background: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card); border-radius: 16px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        .persona-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .detail-item { background: var(--bg); padding: 1rem; border-radius: 8px; }
+        .detail-label { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
+        .detail-value { font-weight: 600; }
+        .trait-bar { background: var(--border); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.5rem; }
+        .trait-fill { height: 100%; background: var(--primary); border-radius: 4px; }
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #1F2937; color: white; padding: 0.875rem 1.5rem; border-radius: 25px; opacity: 0; transition: all 0.3s; }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🧠 数字人AI - 管理后台</h1>
+        <button class="logout-btn" onclick="logout()">退出</button>
+    </header>
+    
+    <main class="container">
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-num" id="totalUsers">0</div>
+                <div class="stat-label">总用户数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="totalAnswers">0</div>
+                <div class="stat-label">总答题数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="todayUsers">0</div>
+                <div class="stat-label">今日新增</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">
+                📋 用户答题记录
+                <button class="refresh-btn" onclick="loadData()">🔄 刷新</button>
+            </div>
+            <div id="tableContainer">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </main>
+    
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>用户详情</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        const API_BASE = 'https://digital-human-ai.onrender.com/api';
+        let allData = [];
+        
+        document.addEventListener('DOMContentLoaded', loadData);
+        
+        async function loadData() {
+            const container = document.getElementById('tableContainer');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/admin/all-data`);
+                if (res.ok) {
+                    const data = await res.json();
+                    renderData(data);
+                } else {
+                    container.innerHTML = '<div class="empty">暂无数据 或 需要管理员权限</div>';
+                }
+            } catch (e) {
+                // 尝试本地API
+                try {
+                    const res = await fetch('/api/admin/all-data');
+                    if (res.ok) {
+                        const data = await res.json();
+                        renderData(data);
+                    } else {
+                        container.innerHTML = '<div class="empty">暂无数据</div>';
+                    }
+                } catch (err) {
+                    container.innerHTML = '<div class="empty">加载失败，请刷新重试</div>';
+                }
+            }
+        }
+        
+        function renderData(data) {
+            allData = data.users || [];
+            const totalAnswers = allData.reduce((sum, u) => sum + (u.answer_count || 0), 0);
+            const today = new Date().toDateString();
+            const todayUsers = allData.filter(u => new Date(u.created_at).toDateString() === today).length;
+            
+            document.getElementById('totalUsers').textContent = allData.length;
+            document.getElementById('totalAnswers').textContent = totalAnswers;
+            document.getElementById('todayUsers').textContent = todayUsers;
+            
+            const container = document.getElementById('tableContainer');
+            
+            if (allData.length === 0) {
+                container.innerHTML = '<div class="empty">暂无用户数据</div>';
+                return;
+            }
+            
+            let html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>答题数</th>
+                            <th>人格画像</th>
+                            <th>注册时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            allData.forEach(user => {
+                const hasPersona = user.has_persona ? '✅ 已生成' : '⏳ 未生成';
+                const badgeClass = user.has_persona ? 'badge-success' : 'badge-warning';
+                const date = new Date(user.created_at).toLocaleString('zh-CN');
+                
+                html += `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td>${user.answer_count || 0}</td>
+                        <td><span class="badge ${badgeClass}">${hasPersona}</span></td>
+                        <td>${date}</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" onclick="showDetail('${user.user_id}')">查看详情</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        function showDetail(userId) {
+            const user = allData.find(u => u.user_id === userId);
+            if (!user) return;
+            
+            const modal = document.getElementById('detailModal');
+            const content = document.getElementById('modalContent');
+            
+            let html = `
+                <div class="persona-detail">
+                    <div class="detail-item">
+                        <div class="detail-label">用户名</div>
+                        <div class="detail-value">${user.username}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">答题数</div>
+                        <div class="detail-value">${user.answer_count || 0}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">人格画像状态</div>
+                        <div class="detail-value">${user.has_persona ? '✅ 已生成' : '⏳ 未生成'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">注册时间</div>
+                        <div class="detail-value">${new Date(user.created_at).toLocaleString('zh-CN')}</div>
+                    </div>
+                </div>
+            `;
+            
+            if (user.persona) {
+                const p = user.persona;
+                html += `
+                    <h3 style="margin: 1.5rem 0 1rem;">🧠 大五人格分析</h3>
+                    <div class="persona-detail">
+                        <div class="detail-item">
+                            <div class="detail-label">开放性</div>
+                            <div class="detail-value">${Math.round(p.big_five?.openness * 100)}%</div>
+                            <div class="trait-bar"><div class="trait-fill" style="width:${p.big_five?.openness * 100}%"></div></div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">尽责性</div>
+                            <div class="detail-value">${Math.round(p.big_five?.conscientiousness * 100)}%</div>
+                            <div class="trait-bar"><div class="trait-fill" style="width:${p.big_five?.conscientiousness * 100}%"></div></div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">外向性</div>
+                            <div class="detail-value">${Math.round(p.big_five?.extraversion * 100)}%</div>
+                            <div class="trait-bar"><div class="trait-fill" style="width:${p.big_five?.extraversion * 100}%"></div></div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">宜人性</div>
+                            <div class="detail-value">${Math.round(p.big_five?.agreeableness * 100)}%</div>
+                            <div class="trait-bar"><div class="trait-fill" style="width:${p.big_five?.agreeableness * 100}%"></div></div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">神经质</div>
+                            <div class="detail-value">${Math.round(p.big_five?.neuroticism * 100)}%</div>
+                            <div class="trait-bar"><div class="trait-fill" style="width:${p.big_five?.neuroticism * 100}%"></div></div>
+                        </div>
+                    </div>
+                `;
+                
+                if (p.interests && p.interests.length > 0) {
+                    html += `<h3 style="margin: 1.5rem 0 1rem;">💡 兴趣领域</h3><p>${p.interests.join(', ')}</p>`;
+                }
+            }
+            
+            content.innerHTML = html;
+            modal.classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+        
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
