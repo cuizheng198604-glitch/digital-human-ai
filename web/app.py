@@ -209,7 +209,12 @@ def get_current_user():
 
 # 初始化问卷引擎
 questionnaire_engine = QuestionnaireEngine()
-
+# 初始化记忆检索器
+memory_retriever = MemoryRetriever(
+    llm_engine=None,
+    config={"embedding_dimension": 128},
+    storage_dir=os.path.join(os.path.dirname(__file__), '..', 'data')
+)
 @app.route('/api/questionnaires', methods=['GET'])
 def get_questionnaires():
     """获取所有问卷列表"""
