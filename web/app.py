@@ -691,6 +691,70 @@ def admin_all_data():
     
     return jsonify({'users': all_users})
 
+@app.route('/api/admin/export', methods=['GET'])
+def admin_export_csv():
+    """导出用户数据为CSV"""
+    db = get_db()
+    users_db = get_users()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # 写入表头
+    writer.writerow([
+        '用户名',
+        '用户ID',
+        '注册时间',
+        '答卷总数',
+        '人格画像状态',
+        '开放性',
+        '尽责性',
+        '外向性',
+        '宜人性',
+        '神经质',
+        '画像生成时间'
+    ])
+    
+    # 写入数据
+    for uid, user in users_db['users'].items():
+        user_answers = db['answers'].get(uid, {})
+        answer_count = sum(len(answers) for answers in user_answers.values())
+        persona = db['results'].get(uid, {}).get('persona')
+        has_persona = persona is not None
+        
+        openness = conscientiousness = extraversion = agreeableness = neuroticism = ''
+        built_at = ''
+        if persona:
+            big_five = persona.get('big_five', {})
+            openness = big_five.get('openness', '')
+            conscientiousness = big_five.get('conscientiousness', '')
+            extraversion = big_five.get('extraversion', '')
+            agreeableness = big_five.get('agreeableness', '')
+            neuroticism = big_five.get('neuroticism', '')
+            built_at = db['results'].get(uid, {}).get('built_at', '')
+        
+        writer.writerow([
+            user.get('username', ''),
+            uid,
+            user.get('created_at', ''),
+            answer_count,
+            '已生成' if has_persona else '未生成',
+            openness,
+            conscientiousness,
+            extraversion,
+            agreeableness,
+            neuroticism,
+            built_at
+        ])
+    
+    output.seek(0)
+    csv_content = output.getvalue()
+    
+    return csv_content, 200, {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename=user_report.csv'
+    }
+
 @app.route('/api/admin/recalculate-all', methods=['POST'])
 def admin_recalculate_all():
     """重新计算所有用户的人格画像"""
