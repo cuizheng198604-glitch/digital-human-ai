@@ -441,7 +441,7 @@ def build_persona():
         raw_answers=user_answers
     )
     
-    # 保存画像 (完整数据)
+   # 保存画像 (完整数据)
  if g.user_id not in db['results']:
      db['results'][g.user_id] = {}
  db['results'][g.user_id] = {
@@ -449,6 +449,42 @@ def build_persona():
      "built_at": datetime.now().isoformat()
  }
  save_db(db)
+
+ # ====== 存入记忆系统 ======
+ if persona.interests:
+     for interest in persona.interests:
+         memory_retriever.add_fact(
+             user_id=g.user_id,
+             fact=f"用户兴趣领域: {interest}",
+             fact_type="interest",
+             importance=0.7,
+             metadata={"source": "persona_build"}
+         )
+
+ if persona.values:
+     for value in persona.values:
+         memory_retriever.add_fact(
+             user_id=g.user_id,
+             fact=f"用户价值观: {value}",
+             fact_type="value",
+             importance=0.6,
+             metadata={"source": "persona_build"}
+         )
+
+ memory_retriever.add_fact(
+     user_id=g.user_id,
+     fact=f"大五人格: 开放性={persona.big_five.openness:.2f}, 尽责性={persona.big_five.conscientiousness:.2f}, 外向性={persona.big_five.extraversion:.2f}, 宜人性={persona.big_five.agreeableness:.2f}, 神经质={persona.big_five.neuroticism:.2f}",
+     fact_type="big_five",
+     importance=0.8,
+     metadata={"source": "persona_build"}
+ )
+
+ memory_retriever.save_all()
+
+ return jsonify({
+     "success": True,
+     "persona": persona.to_dict()
+ })
 
  # ====== 存入记忆系统 ======
  if persona.interests:
