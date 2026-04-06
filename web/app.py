@@ -22,7 +22,7 @@ from modeling.personality_encoder import PersonalityEncoder, UserPersona, BigFiv
 from modeling.social_media_collector import SocialMediaCollector
 from engine.llm_engine import LLMEngine
 from questionnaire.questionnaire_engine import QuestionnaireEngine, QuestionType
-
+from engine.memory_retriever import MemoryRetriever
 app = Flask(__name__, static_folder='../web', static_url_path='')
 CORS(app)
 
