@@ -205,16 +205,8 @@ def get_current_user():
 
 questionnaire_engine = QuestionnaireEngine()
 
-# 记忆系统初始化（模块级别，只在服务启动时初始化一次）
+# 记忆系统暂时禁用，避免内存超时问题
 memory_retriever = None
-try:
-    memory_retriever = MemoryRetriever(
-        llm_engine=None,
-        config={"embedding_dimension": 128},
-        storage_dir=os.path.join(os.path.dirname(__file__), '..', 'data')
-    )
-except Exception as e:
-    print(f"[WARNING] Memory system init failed: {e}")
 
 @app.route('/api/questionnaires', methods=['GET'])
 def get_questionnaires():
@@ -438,38 +430,6 @@ def build_persona():
     }
     save_db(db)
     
-    # 存储到记忆系统（有保护）
-    if memory_retriever is not None:
-        try:
-            if persona.interests:
-                for interest in persona.interests:
-                    memory_retriever.add_fact(
-                        user_id=g.user_id,
-                        fact=f"用户兴趣: {interest}",
-                        fact_type="interest",
-                        importance=0.7
-                    )
-            
-            if persona.values:
-                for value in persona.values:
-                    memory_retriever.add_fact(
-                        user_id=g.user_id,
-                        fact=f"用户价值观: {value}",
-                        fact_type="value",
-                        importance=0.6
-                    )
-            
-            memory_retriever.add_fact(
-                user_id=g.user_id,
-                fact=f"大五人格: 开放={persona.big_five.openness:.2f}, 尽责={persona.big_five.conscientiousness:.2f}, 外向={persona.big_five.extraversion:.2f}, 宜人={persona.big_five.agreeableness:.2f}, 神经质={persona.big_five.neuroticism:.2f}",
-                fact_type="big_five",
-                importance=0.8
-            )
-            
-            memory_retriever.save_all()
-        except Exception as e:
-            print(f"[WARNING] Memory storage failed: {e}")
-    
     return jsonify({
         "success": True,
         "persona": persona.to_dict()
@@ -537,8 +497,8 @@ def add_conversation_memory():
                 content=content,
                 user_id=g.user_id
             )
-        except Exception as e:
-            print(f"[WARNING] Memory add_conversation failed: {e}")
+        except Exception:
+            pass
     
     return jsonify({"success": True})
 
@@ -563,8 +523,7 @@ def retrieve_memories():
             top_k=5
         )
         return jsonify(results)
-    except Exception as e:
-        print(f"[WARNING] Memory retrieve failed: {e}")
+    except Exception:
         return jsonify([])
 
 @app.route('/api/memory/context', methods=['GET'])
@@ -587,8 +546,7 @@ def get_memory_context():
             session_id=session_id
         )
         return jsonify({"context": context})
-    except Exception as e:
-        print(f"[WARNING] Memory build_rag_context failed: {e}")
+    except Exception:
         return jsonify({"context": ""})
 
 @app.route('/api/memory/summary', methods=['GET'])
@@ -601,8 +559,7 @@ def get_memory_summary():
     try:
         summary = memory_retriever.get_user_memories_summary(g.user_id)
         return jsonify(summary)
-    except Exception as e:
-        print(f"[WARNING] Memory summary failed: {e}")
+    except Exception:
         return jsonify({"summary": ""})
 
 @app.route('/api/memory/clear', methods=['POST'])
@@ -612,8 +569,8 @@ def clear_user_memories():
     if memory_retriever is not None:
         try:
             memory_retriever.clear_user_memory(g.user_id)
-        except Exception as e:
-            print(f"[WARNING] Memory clear failed: {e}")
+        except Exception:
+            pass
     return jsonify({"success": True})
 
 # ==================== 仪表盘 API ====================
