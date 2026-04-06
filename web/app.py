@@ -368,9 +368,19 @@ def build_persona():
     """构建用户人格画像"""
     db = get_db()
     
-    all_results = {}
-    user_answers = db['answers'].get(g.user_id, {})
+    # 计算总题数和已答数量
+    all_questionnaires = questionnaire_engine.get_all_questionnaires()
+    total_questions = sum(len(q.questions) for q in all_questionnaires)
     
+    user_answers = db['answers'].get(g.user_id, {})
+    answered_count = sum(len(answers) for answers in user_answers.values())
+    
+    # 生成提示信息
+    warning = None
+    if answered_count < total_questions:
+        warning = f"温馨提示：您已回答 {answered_count}/{total_questions} 题，建议完成全部问卷（{total_questions}题）后再生成画像，数据会更真实准确。"
+    
+    all_results = {}
     for qid, answers in user_answers.items():
         questionnaire = questionnaire_engine.get_questionnaire(qid)
         if not questionnaire:
@@ -430,10 +440,14 @@ def build_persona():
     }
     save_db(db)
     
-    return jsonify({
+    response = {
         "success": True,
         "persona": persona.to_dict()
-    })
+    }
+    if warning:
+        response["warning"] = warning
+    
+    return jsonify(response)
 
 @app.route('/api/persona', methods=['GET'])
 @require_auth
