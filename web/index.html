@@ -512,7 +512,12 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    showToast('人格画像生成成功！');
+                    // 如果有温馨提示，显示警告toast
+                    if (data.warning) {
+                        showToast(data.warning);
+                    } else {
+                        showToast('人格画像生成成功！');
+                    }
                     loadDashboard();
                 } else {
                     showToast(data.error || '生成失败');
