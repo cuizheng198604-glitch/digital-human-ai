@@ -81,6 +81,7 @@
         <div class="card">
             <div class="card-title">
                 📋 用户答题记录
+                <button class="refresh-btn" onclick="exportCSV()" style="background:#059669;margin-right:0.5rem;">📥 导出CSV</button>
                 <button class="refresh-btn" onclick="recalculateAll()" style="background:#F59E0B;margin-right:0.5rem;">🔧 重新计算人格</button>
                 <button class="refresh-btn" onclick="loadData()">🔄 刷新</button>
             </div>
@@ -305,6 +306,30 @@
             toast.textContent = message;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function exportCSV() {
+            showToast('正在导出CSV...');
+            try {
+                const res = await fetch('/api/admin/export');
+                const csvText = await res.text();
+                
+                // 创建下载
+                const blob = new Blob(['\uFEFF' + csvText], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'user_report_' + new Date().toISOString().slice(0,10) + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showToast('导出成功！');
+            } catch (e) {
+                showToast('导出失败');
+                console.error(e);
+            }
         }
     </script>
 </body>
