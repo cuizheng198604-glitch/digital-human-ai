@@ -205,11 +205,16 @@ def get_current_user():
 
 questionnaire_engine = QuestionnaireEngine()
 
-memory_retriever = MemoryRetriever(
-    llm_engine=None,
-    config={"embedding_dimension": 128},
-    storage_dir=os.path.join(os.path.dirname(__file__), '..', 'data')
-)
+# 记忆系统初始化（模块级别，只在服务启动时初始化一次）
+memory_retriever = None
+try:
+    memory_retriever = MemoryRetriever(
+        llm_engine=None,
+        config={"embedding_dimension": 128},
+        storage_dir=os.path.join(os.path.dirname(__file__), '..', 'data')
+    )
+except Exception as e:
+    print(f"[WARNING] Memory system init failed: {e}")
 
 @app.route('/api/questionnaires', methods=['GET'])
 def get_questionnaires():
@@ -433,33 +438,37 @@ def build_persona():
     }
     save_db(db)
     
-    # 存储到记忆系统（简化版，无 try-except）
-    if persona.interests:
-        for interest in persona.interests:
+    # 存储到记忆系统（有保护）
+    if memory_retriever is not None:
+        try:
+            if persona.interests:
+                for interest in persona.interests:
+                    memory_retriever.add_fact(
+                        user_id=g.user_id,
+                        fact=f"用户兴趣: {interest}",
+                        fact_type="interest",
+                        importance=0.7
+                    )
+            
+            if persona.values:
+                for value in persona.values:
+                    memory_retriever.add_fact(
+                        user_id=g.user_id,
+                        fact=f"用户价值观: {value}",
+                        fact_type="value",
+                        importance=0.6
+                    )
+            
             memory_retriever.add_fact(
                 user_id=g.user_id,
-                fact=f"用户兴趣: {interest}",
-                fact_type="interest",
-                importance=0.7
+                fact=f"大五人格: 开放={persona.big_five.openness:.2f}, 尽责={persona.big_five.conscientiousness:.2f}, 外向={persona.big_five.extraversion:.2f}, 宜人={persona.big_five.agreeableness:.2f}, 神经质={persona.big_five.neuroticism:.2f}",
+                fact_type="big_five",
+                importance=0.8
             )
-    
-    if persona.values:
-        for value in persona.values:
-            memory_retriever.add_fact(
-                user_id=g.user_id,
-                fact=f"用户价值观: {value}",
-                fact_type="value",
-                importance=0.6
-            )
-    
-    memory_retriever.add_fact(
-        user_id=g.user_id,
-        fact=f"大五人格: 开放={persona.big_five.openness:.2f}, 尽责={persona.big_five.conscientiousness:.2f}, 外向={persona.big_five.extraversion:.2f}, 宜人={persona.big_five.agreeableness:.2f}, 神经质={persona.big_five.neuroticism:.2f}",
-        fact_type="big_five",
-        importance=0.8
-    )
-    
-    memory_retriever.save_all()
+            
+            memory_retriever.save_all()
+        except Exception as e:
+            print(f"[WARNING] Memory storage failed: {e}")
     
     return jsonify({
         "success": True,
@@ -520,12 +529,16 @@ def add_conversation_memory():
     if not content:
         return jsonify({"error": "内容不能为空"}), 400
     
-    memory_retriever.add_conversation(
-        session_id=session_id,
-        role=role,
-        content=content,
-        user_id=g.user_id
-    )
+    if memory_retriever is not None:
+        try:
+            memory_retriever.add_conversation(
+                session_id=session_id,
+                role=role,
+                content=content,
+                user_id=g.user_id
+            )
+        except Exception as e:
+            print(f"[WARNING] Memory add_conversation failed: {e}")
     
     return jsonify({"success": True})
 
@@ -539,14 +552,20 @@ def retrieve_memories():
     if not query:
         return jsonify({"error": "查询内容不能为空"}), 400
     
-    results = memory_retriever.retrieve(
-        query=query,
-        user_id=g.user_id,
-        session_id=session_id,
-        top_k=5
-    )
+    if memory_retriever is None:
+        return jsonify([])
     
-    return jsonify(results)
+    try:
+        results = memory_retriever.retrieve(
+            query=query,
+            user_id=g.user_id,
+            session_id=session_id,
+            top_k=5
+        )
+        return jsonify(results)
+    except Exception as e:
+        print(f"[WARNING] Memory retrieve failed: {e}")
+        return jsonify([])
 
 @app.route('/api/memory/context', methods=['GET'])
 @require_auth
@@ -558,26 +577,43 @@ def get_memory_context():
     if not query:
         return jsonify({"error": "查询内容不能为空"}), 400
     
-    context = memory_retriever.build_rag_context(
-        query=query,
-        user_id=g.user_id,
-        session_id=session_id
-    )
+    if memory_retriever is None:
+        return jsonify({"context": ""})
     
-    return jsonify({"context": context})
+    try:
+        context = memory_retriever.build_rag_context(
+            query=query,
+            user_id=g.user_id,
+            session_id=session_id
+        )
+        return jsonify({"context": context})
+    except Exception as e:
+        print(f"[WARNING] Memory build_rag_context failed: {e}")
+        return jsonify({"context": ""})
 
 @app.route('/api/memory/summary', methods=['GET'])
 @require_auth
 def get_memory_summary():
     """获取用户记忆摘要"""
-    summary = memory_retriever.get_user_memories_summary(g.user_id)
-    return jsonify(summary)
+    if memory_retriever is None:
+        return jsonify({"summary": ""})
+    
+    try:
+        summary = memory_retriever.get_user_memories_summary(g.user_id)
+        return jsonify(summary)
+    except Exception as e:
+        print(f"[WARNING] Memory summary failed: {e}")
+        return jsonify({"summary": ""})
 
 @app.route('/api/memory/clear', methods=['POST'])
 @require_auth
 def clear_user_memories():
     """清除用户所有记忆"""
-    memory_retriever.clear_user_memory(g.user_id)
+    if memory_retriever is not None:
+        try:
+            memory_retriever.clear_user_memory(g.user_id)
+        except Exception as e:
+            print(f"[WARNING] Memory clear failed: {e}")
     return jsonify({"success": True})
 
 # ==================== 仪表盘 API ====================
