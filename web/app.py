@@ -23,6 +23,7 @@ from modeling.social_media_collector import SocialMediaCollector
 from engine.llm_engine import LLMEngine
 from questionnaire.questionnaire_engine import QuestionnaireEngine, QuestionType
 from engine.memory_retriever import MemoryRetriever
+
 app = Flask(__name__, static_folder='../web', static_url_path='')
 CORS(app)
 
@@ -49,16 +50,16 @@ def get_db():
     """获取数据库"""
     return load_json(app.config['DATABASE'], {
         "sessions": {},
-        "answers": {},  # {session_id: {questionnaire_id: [answers]}}
-        "progress": {},  # {session_id: {questionnaire_id: current_index}}
-        "results": {},  # {session_id: final_persona}
-        "analysis": {}  # {session_id: analysis_results}
+        "answers": {},
+        "progress": {},
+        "results": {},
+        "analysis": {}
     })
 
 def get_users():
     """获取用户库"""
     return load_json(app.config['USERS_FILE'], {
-        "users": {}  # {user_id: {user_id, username, password_hash, created_at}}
+        "users": {}
     })
 
 def save_db(data):
@@ -113,12 +114,10 @@ def register():
     
     users_db = get_users()
     
-    # 检查用户名是否存在
     for uid, user in users_db['users'].items():
         if user['username'] == username:
             return jsonify({"error": "用户名已存在"}), 400
     
-    # 创建用户
     user_id = str(uuid.uuid4())[:8]
     users_db['users'][user_id] = {
         "user_id": user_id,
@@ -128,7 +127,6 @@ def register():
     }
     save_users(users_db)
     
-    # 创建会话
     token = create_token()
     db = get_db()
     db['sessions'][token] = {
@@ -156,7 +154,6 @@ def login():
     
     users_db = get_users()
     
-    # 查找用户
     user = None
     for uid, u in users_db['users'].items():
         if u['username'] == username and u['password_hash'] == hash_password(password):
@@ -166,7 +163,6 @@ def login():
     if not user:
         return jsonify({"error": "用户名或密码错误"}), 401
     
-    # 创建会话
     token = create_token()
     db = get_db()
     db['sessions'][token] = {
@@ -207,14 +203,14 @@ def get_current_user():
 
 # ==================== 问卷 API ====================
 
-# 初始化问卷引擎
 questionnaire_engine = QuestionnaireEngine()
-# 初始化记忆检索器
+
 memory_retriever = MemoryRetriever(
     llm_engine=None,
     config={"embedding_dimension": 128},
     storage_dir=os.path.join(os.path.dirname(__file__), '..', 'data')
 )
+
 @app.route('/api/questionnaires', methods=['GET'])
 def get_questionnaires():
     """获取所有问卷列表"""
@@ -273,13 +269,11 @@ def submit_answer(questionnaire_id):
     
     db = get_db()
     
-    # 确保用户数据结构存在
     if g.user_id not in db['answers']:
         db['answers'][g.user_id] = {}
     if questionnaire_id not in db['answers'][g.user_id]:
         db['answers'][g.user_id][questionnaire_id] = []
     
-    # 检查是否已回答过该题
     existing_answers = db['answers'][g.user_id][questionnaire_id]
     for i, a in enumerate(existing_answers):
         if a['question_id'] == question_id:
@@ -291,7 +285,6 @@ def submit_answer(questionnaire_id):
             save_db(db)
             return jsonify({"success": True, "updated": True})
     
-    # 添加新答案
     existing_answers.append({
         "question_id": question_id,
         "answer": answer,
@@ -323,7 +316,6 @@ def submit_questionnaire(questionnaire_id):
     if not answers:
         return jsonify({"error": "请先完成问卷"}), 400
     
-    # 计算分数
     questionnaire = questionnaire_engine.get_questionnaire(questionnaire_id)
     if not questionnaire:
         return jsonify({"error": "问卷不存在"}), 404
@@ -333,7 +325,6 @@ def submit_questionnaire(questionnaire_id):
         qid = answer_data['question_id']
         answer = answer_data['answer']
         
-        # 找到题目
         question = None
         for q in questionnaire.questions:
             if q.id == qid:
@@ -343,7 +334,6 @@ def submit_questionnaire(questionnaire_id):
         if not question or not question.dimension:
             continue
         
-        # 计算分数
         score = 0.0
         if question.type == QuestionType.SCALE and isinstance(answer, int):
             score = answer / question.scale_range[1]
@@ -354,13 +344,11 @@ def submit_questionnaire(questionnaire_id):
             dimension_scores[question.dimension] = []
         dimension_scores[question.dimension].append(score)
     
-    # 计算各维度平均分
     dimension_avg = {}
     for dim, scores in dimension_scores.items():
         if scores:
             dimension_avg[dim] = sum(scores) / len(scores)
     
-    # 保存分析结果
     if g.user_id not in db['analysis']:
         db['analysis'][g.user_id] = {}
     db['analysis'][g.user_id][questionnaire_id] = {
@@ -383,7 +371,6 @@ def build_persona():
     """构建用户人格画像"""
     db = get_db()
     
-    # 收集所有问卷结果
     all_results = {}
     user_answers = db['answers'].get(g.user_id, {})
     
@@ -392,7 +379,6 @@ def build_persona():
         if not questionnaire:
             continue
         
-        # 计算分数
         dimension_scores = {}
         for answer_data in answers:
             qid_inner = answer_data['question_id']
@@ -425,7 +411,6 @@ def build_persona():
         if dimension_avg:
             all_results[qid] = dimension_avg
     
-    # 构建人格画像
     encoder = PersonalityEncoder()
     questionnaire_results = {}
     for qid, dims in all_results.items():
@@ -434,14 +419,12 @@ def build_persona():
             for dim, score in dims.items()
         ]
     
-    # 传递原始答案用于提取兴趣和价值观
     persona = encoder.build_persona(
         user_id=g.user_id,
         questionnaire_results=questionnaire_results,
         raw_answers=user_answers
     )
     
-    # 保存画像 (完整数据)
     if g.user_id not in db['results']:
         db['results'][g.user_id] = {}
     db['results'][g.user_id] = {
@@ -449,45 +432,40 @@ def build_persona():
         "built_at": datetime.now().isoformat()
     }
     save_db(db)
-
-    # 存入记忆系统
-    try:
-        if persona.interests:
-            for interest in persona.interests:
-                memory_retriever.add_fact(
-                    user_id=g.user_id,
-                    fact=f"用户兴趣领域: {interest}",
-                    fact_type="interest",
-                    importance=0.7,
-                    metadata={"source": "persona_build"}
-                )
-
-        if persona.values:
-            for value in persona.values:
-                memory_retriever.add_fact(
-                    user_id=g.user_id,
-                    fact=f"用户价值观: {value}",
-                    fact_type="value",
-                    importance=0.6,
-                    metadata={"source": "persona_build"}
-                )
-
-        memory_retriever.add_fact(
-            user_id=g.user_id,
-            fact=f"大五人格: 开放性={persona.big_five.openness:.2f}, 尽责性={persona.big_five.conscientiousness:.2f}, 外向性={persona.big_five.extraversion:.2f}, 宜人性={persona.big_five.agreeableness:.2f}, 神经质={persona.big_five.neuroticism:.2f}",
-            fact_type="big_five",
-            importance=0.8,
-            metadata={"source": "persona_build"}
-        )
-
-        memory_retriever.save_all()
-    except Exception as e:
-        print(f"Warning: Failed to store memory: {e}")
-
+    
+    # 存储到记忆系统（简化版，无 try-except）
+    if persona.interests:
+        for interest in persona.interests:
+            memory_retriever.add_fact(
+                user_id=g.user_id,
+                fact=f"用户兴趣: {interest}",
+                fact_type="interest",
+                importance=0.7
+            )
+    
+    if persona.values:
+        for value in persona.values:
+            memory_retriever.add_fact(
+                user_id=g.user_id,
+                fact=f"用户价值观: {value}",
+                fact_type="value",
+                importance=0.6
+            )
+    
+    memory_retriever.add_fact(
+        user_id=g.user_id,
+        fact=f"大五人格: 开放={persona.big_five.openness:.2f}, 尽责={persona.big_five.conscientiousness:.2f}, 外向={persona.big_five.extraversion:.2f}, 宜人={persona.big_five.agreeableness:.2f}, 神经质={persona.big_five.neuroticism:.2f}",
+        fact_type="big_five",
+        importance=0.8
+    )
+    
+    memory_retriever.save_all()
+    
     return jsonify({
         "success": True,
         "persona": persona.to_dict()
     })
+
 @app.route('/api/persona', methods=['GET'])
 @require_auth
 def get_persona():
@@ -527,6 +505,7 @@ def get_persona_description():
             "neuroticism": persona.big_five.neuroticism
         }
     })
+
 # ==================== 对话记忆 API ====================
 
 @app.route('/api/memory/conversation', methods=['POST'])
@@ -550,7 +529,6 @@ def add_conversation_memory():
     
     return jsonify({"success": True})
 
-
 @app.route('/api/memory/retrieve', methods=['GET'])
 @require_auth
 def retrieve_memories():
@@ -570,7 +548,6 @@ def retrieve_memories():
     
     return jsonify(results)
 
-
 @app.route('/api/memory/context', methods=['GET'])
 @require_auth
 def get_memory_context():
@@ -589,14 +566,12 @@ def get_memory_context():
     
     return jsonify({"context": context})
 
-
 @app.route('/api/memory/summary', methods=['GET'])
 @require_auth
 def get_memory_summary():
     """获取用户记忆摘要"""
     summary = memory_retriever.get_user_memories_summary(g.user_id)
     return jsonify(summary)
-
 
 @app.route('/api/memory/clear', methods=['POST'])
 @require_auth
@@ -613,7 +588,6 @@ def get_dashboard():
     """获取仪表盘数据"""
     db = get_db()
     
-    # 问卷完成情况
     all_questionnaires = questionnaire_engine.get_all_questionnaires()
     completed = []
     pending = []
@@ -633,13 +607,11 @@ def get_dashboard():
                 "question_count": len(q.questions)
             })
     
-    # 人格画像状态
     persona_status = "not_started"
     persona_data = db['results'].get(g.user_id)
     if persona_data:
         persona_status = "completed"
     
-    # 社交媒体数据
     analysis = db['analysis'].get(g.user_id, {})
     
     return jsonify({
@@ -658,42 +630,34 @@ def get_dashboard():
 
 @app.route('/')
 def index():
-    """首页"""
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/questionnaire')
 def questionnaire_page():
-    """问卷页面"""
     return send_from_directory(app.static_folder, 'questionnaire.html')
 
 @app.route('/persona')
 def persona_page():
-    """人格画像页面"""
     return send_from_directory(app.static_folder, 'persona.html')
 
 @app.route('/login')
 def login_page():
-    """登录页面"""
     return send_from_directory(app.static_folder, 'login.html')
 
 @app.route('/register')
 def register_page():
-    """注册页面"""
     return send_from_directory(app.static_folder, 'register.html')
 
 @app.route('/share')
 def share_page():
-    """分享页面"""
     return send_from_directory(app.static_folder, 'share.html')
 
 @app.route('/standalone')
 def standalone_page():
-    """独立问卷页面"""
     return send_from_directory(app.static_folder, 'standalone_questionnaire.html')
 
 @app.route('/admin')
 def admin_page():
-    """管理后台页面"""
     return send_from_directory(app.static_folder, 'admin.html')
 
 @app.route('/api/admin/all-data')
@@ -722,7 +686,7 @@ def admin_all_data():
 
 @app.route('/api/admin/recalculate-all', methods=['POST'])
 def admin_recalculate_all():
-    """重新计算所有用户的人格画像（修复50%问题）"""
+    """重新计算所有用户的人格画像"""
     db = get_db()
     users_db = get_users()
     
@@ -735,7 +699,6 @@ def admin_recalculate_all():
         if not user_answers:
             continue
         
-        # 构建问卷结果
         questionnaire_results = {}
         for qid, answers in user_answers.items():
             questionnaire = questionnaire_engine.get_questionnaire(qid)
@@ -778,7 +741,7 @@ def admin_recalculate_all():
                 persona = encoder.build_persona(
                     user_id=uid,
                     questionnaire_results=questionnaire_results,
-                    raw_answers=user_answers  # 传递原始答案用于提取兴趣和价值观
+                    raw_answers=user_answers
                 )
                 
                 db['results'][uid] = {
