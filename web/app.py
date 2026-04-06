@@ -442,18 +442,51 @@ def build_persona():
     )
     
     # 保存画像 (完整数据)
-    if g.user_id not in db['results']:
-        db['results'][g.user_id] = {}
-    db['results'][g.user_id] = {
-        "persona": persona.to_dict(),
-        "built_at": datetime.now().isoformat()
-    }
-    save_db(db)
-    
-    return jsonify({
-        "success": True,
-        "persona": persona.to_dict()
-    })
+ if g.user_id not in db['results']:
+     db['results'][g.user_id] = {}
+ db['results'][g.user_id] = {
+     "persona": persona.to_dict(),
+     "built_at": datetime.now().isoformat()
+ }
+ save_db(db)
+
+ # ====== 存入记忆系统 ======
+ if persona.interests:
+     for interest in persona.interests:
+         memory_retriever.add_fact(
+             user_id=g.user_id,
+             fact=f"用户兴趣领域: {interest}",
+             fact_type="interest",
+             importance=0.7,
+             metadata={"source": "persona_build"}
+         )
+
+ if persona.values:
+     for value in persona.values:
+         memory_retriever.add_fact(
+             user_id=g.user_id,
+             fact=f"用户价值观: {value}",
+             fact_type="value",
+             importance=0.6,
+             metadata={"source": "persona_build"}
+         )
+
+ # 存储大五人格
+ memory_retriever.add_fact(
+     user_id=g.user_id,
+     fact=f"大五人格: 开放性={persona.big_five.openness:.2f}, 尽责性={persona.big_five.conscientiousness:.2f}, 外向性={persona.big_five.extraversion:.2f}, 宜人性={persona.big_five.agreeableness:.2f}, 神经质={persona.big_five.neuroticism:.2f}",
+     fact_type="big_five",
+     importance=0.8,
+     metadata={"source": "persona_build"}
+ )
+
+ # 保存记忆
+ memory_retriever.save_all()
+
+ return jsonify({
+     "success": True,
+     "persona": persona.to_dict()
+ })
 
 @app.route('/api/persona', methods=['GET'])
 @require_auth
@@ -494,6 +527,83 @@ def get_persona_description():
             "neuroticism": persona.big_five.neuroticism
         }
     })
+# ==================== 对话记忆 API ====================
+
+@app.route('/api/memory/conversation', methods=['POST'])
+@require_auth
+def add_conversation_memory():
+    """添加对话记忆"""
+    data = request.get_json()
+    content = data.get('content', '')
+    role = data.get('role', 'user')
+    session_id = data.get('session_id', g.user_id)
+    
+    if not content:
+        return jsonify({"error": "内容不能为空"}), 400
+    
+    memory_retriever.add_conversation(
+        session_id=session_id,
+        role=role,
+        content=content,
+        user_id=g.user_id
+    )
+    
+    return jsonify({"success": True})
+
+
+@app.route('/api/memory/retrieve', methods=['GET'])
+@require_auth
+def retrieve_memories():
+    """检索相关记忆"""
+    query = request.args.get('query', '')
+    session_id = request.args.get('session_id', g.user_id)
+    
+    if not query:
+        return jsonify({"error": "查询内容不能为空"}), 400
+    
+    results = memory_retriever.retrieve(
+        query=query,
+        user_id=g.user_id,
+        session_id=session_id,
+        top_k=5
+    )
+    
+    return jsonify(results)
+
+
+@app.route('/api/memory/context', methods=['GET'])
+@require_auth
+def get_memory_context():
+    """获取RAG上下文字符串"""
+    query = request.args.get('query', '')
+    session_id = request.args.get('session_id', g.user_id)
+    
+    if not query:
+        return jsonify({"error": "查询内容不能为空"}), 400
+    
+    context = memory_retriever.build_rag_context(
+        query=query,
+        user_id=g.user_id,
+        session_id=session_id
+    )
+    
+    return jsonify({"context": context})
+
+
+@app.route('/api/memory/summary', methods=['GET'])
+@require_auth
+def get_memory_summary():
+    """获取用户记忆摘要"""
+    summary = memory_retriever.get_user_memories_summary(g.user_id)
+    return jsonify(summary)
+
+
+@app.route('/api/memory/clear', methods=['POST'])
+@require_auth
+def clear_user_memories():
+    """清除用户所有记忆"""
+    memory_retriever.clear_user_memory(g.user_id)
+    return jsonify({"success": True})
 
 # ==================== 仪表盘 API ====================
 
